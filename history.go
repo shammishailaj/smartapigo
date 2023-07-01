@@ -91,46 +91,24 @@ type HistoryDatum struct {
 	High      float64
 	Low       float64
 	Close     float64
-	Volume    float64
+	Volume    int64
 }
 
 type HistoryResponse struct {
-	Status    bool           `json:"status"`
-	Message   string         `json:"message"`
-	Errorcode string         `json:"errorcode"`
-	Data      []HistoryDatum `json:"data"`
+	Data [][]interface{} `json:"data"`
 }
 
 func (h HistoryResponse) String() string {
-	retVal := fmt.Sprintf("Status: %t\nMessage: %s\nErrorcode: %s\n", h.Status, h.Message, h.Errorcode)
-	for _, datum := range h.Data {
-		retVal += fmt.Sprintf("\tTimeStamp: %s\n\tOpen: %f, High: %f, Low: %f, Close: %f, Volume: %f", datum.Timestamp, datum.Open, datum.High, datum.Low, datum.Close, datum.Volume)
+	retVal := ""
+	for k, datum := range h.Data {
+		retVal += fmt.Sprintf("\tTimeStamp: %s\n\tOpen: %f, High: %f, Low: %f, Close: %f, Volume: %d", datum[k].(string), datum[k].(float64), datum[k].(float64), datum[k].(float64), datum[k].(float64), datum[k].(int64))
 	}
 	return retVal
 }
 
-type ABResponse struct {
-	Status    bool    `json:"status"`
-	Message   string  `json:"message"`
-	Errorcode string  `json:"errorcode"`
-	Data      [][]any `json:"data"`
-}
-
-func (a ABResponse) String() string {
-	retVal := fmt.Sprintf("Status: %t\nMessage: %s\nErrorcode: %s\n", a.Status, a.Message, a.Errorcode)
-	for _, datum := range a.Data {
-		retVal += fmt.Sprintf("\tTimeStamp: %s\n\tOpen: %f, High: %f, Low: %f, Close: %f, Volume: %f\n", datum[0], datum[1], datum[2], datum[3], datum[4], datum[5])
-	}
-	return retVal
-}
-
-func (a ABResponse) Parse() HistoryResponse {
-	var retVal HistoryResponse
-	retVal.Status = a.Status
-	retVal.Message = a.Message
-	retVal.Errorcode = a.Errorcode
-	data := make([]HistoryDatum, len(a.Data))
-	for k, datum := range a.Data {
+func (h HistoryResponse) Parse() []HistoryDatum {
+	data := make([]HistoryDatum, len(h.Data))
+	for k, datum := range h.Data {
 		ts, tsErr := time.Parse(TimeFormatLayout, datum[0].(string))
 		if tsErr != nil {
 			ts = time.Now()
@@ -140,21 +118,20 @@ func (a ABResponse) Parse() HistoryResponse {
 		data[k].High = datum[2].(float64)
 		data[k].Low = datum[3].(float64)
 		data[k].Close = datum[4].(float64)
-		data[k].Volume = datum[5].(float64)
+		data[k].Volume = datum[5].(int64)
 	}
-	retVal.Data = data
-	return retVal
+	return data
 }
 
 // GetCandleData gets history of the specified symbol between a defined time-range
-func (c *Client) GetCandleData(params *HistoryParams) (HistoryResponse, error) {
-	var candleData ABResponse
+func (c *Client) GetCandleData(params *HistoryParams) ([]HistoryDatum, error) {
+	var candleData HistoryResponse
 	if !params.ValidDates() {
-		return HistoryResponse{}, fmt.Errorf("history.GetCandleData: fromdate can not be greater than todate")
+		return []HistoryDatum{}, fmt.Errorf("history.GetCandleData: fromdate can not be greater than todate")
 	}
 
 	if !params.IsValidInterval() {
-		return HistoryResponse{}, fmt.Errorf("history.GetCandleData: interval days can not be %d when interval is %s. Please see %s for details", params.IntervalDays(), params.Interval, URLHistoryDocumentation)
+		return []HistoryDatum{}, fmt.Errorf("history.GetCandleData: interval days can not be %d when interval is %s. Please see %s for details", params.IntervalDays(), params.Interval, URLHistoryDocumentation)
 	}
 
 	err := c.doEnvelope(http.MethodPost, URIGetCandleData, params.GetParams(), nil, &candleData, true)
