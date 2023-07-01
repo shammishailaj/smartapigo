@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	SmartApi "github.com/angel-one/smartapigo"
+	SmartApi "github.com/shammishailaj/smartapigo"
 )
 
 func main() {
