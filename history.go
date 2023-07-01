@@ -120,6 +120,6 @@ func (c *Client) GetCandleData(params *HistoryParams) (*HistoryResponse, error) 
 		return nil, fmt.Errorf("history.GetCandleData: interval days can not be %d when interval is %s. Please see %s for details", params.IntervalDays(), params.Interval, URLHistoryDocumentation)
 	}
 
-	err := c.doEnvelope(http.MethodGet, URIGetCandleData, params.GetParams(), nil, &history, true)
+	err := c.doEnvelope(http.MethodPost, URIGetCandleData, params.GetParams(), nil, &history, true)
 	return history, err
 }
