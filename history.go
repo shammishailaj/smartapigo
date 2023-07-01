@@ -94,21 +94,19 @@ type HistoryDatum struct {
 	Volume    int64
 }
 
-type HistoryResponse struct {
-	Data [][]interface{} `json:"data"`
-}
+type HistoryResponse [][]interface{}
 
 func (h HistoryResponse) String() string {
 	retVal := ""
-	for k, datum := range h.Data {
+	for k, datum := range h {
 		retVal += fmt.Sprintf("\tTimeStamp: %s\n\tOpen: %f, High: %f, Low: %f, Close: %f, Volume: %d", datum[k].(string), datum[k].(float64), datum[k].(float64), datum[k].(float64), datum[k].(float64), datum[k].(int64))
 	}
 	return retVal
 }
 
 func (h HistoryResponse) Parse() []HistoryDatum {
-	data := make([]HistoryDatum, len(h.Data))
-	for k, datum := range h.Data {
+	data := make([]HistoryDatum, len(h))
+	for k, datum := range h {
 		ts, tsErr := time.Parse(TimeFormatLayout, datum[0].(string))
 		if tsErr != nil {
 			ts = time.Now()
