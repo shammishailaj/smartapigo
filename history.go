@@ -109,17 +109,55 @@ func (h HistoryResponse) String() string {
 	return retVal
 }
 
+type ABResponse struct {
+	Status    bool    `json:"status"`
+	Message   string  `json:"message"`
+	Errorcode string  `json:"errorcode"`
+	Data      [][]any `json:"data"`
+}
+
+func (a ABResponse) String() string {
+	retVal := fmt.Sprintf("Status: %t\nMessage: %s\nErrorcode: %s\n", a.Status, a.Message, a.Errorcode)
+	for _, datum := range a.Data {
+		retVal += fmt.Sprintf("\tTimeStamp: %s\n\tOpen: %f, High: %f, Low: %f, Close: %f, Volume: %f\n", datum[0], datum[1], datum[2], datum[3], datum[4], datum[5])
+	}
+	return retVal
+}
+
+func (a ABResponse) Parse() HistoryResponse {
+	var retVal HistoryResponse
+	retVal.Status = a.Status
+	retVal.Message = a.Message
+	retVal.Errorcode = a.Errorcode
+	data := make([]HistoryDatum, len(a.Data))
+	for k, datum := range a.Data {
+		ts, tsErr := time.Parse(TimeFormatLayout, datum[0].(string))
+		if tsErr != nil {
+			ts = time.Now()
+		}
+		data[k].Timestamp = ts
+		data[k].Open = datum[1].(float64)
+		data[k].High = datum[2].(float64)
+		data[k].Low = datum[3].(float64)
+		data[k].Close = datum[4].(float64)
+		data[k].Volume = datum[5].(float64)
+	}
+	retVal.Data = data
+	return retVal
+}
+
 // GetCandleData gets history of the specified symbol between a defined time-range
-func (c *Client) GetCandleData(params *HistoryParams) (*HistoryResponse, error) {
-	var history *HistoryResponse
+func (c *Client) GetCandleData(params *HistoryParams) (HistoryResponse, error) {
+	var candleData ABResponse
 	if !params.ValidDates() {
-		return nil, fmt.Errorf("history.GetCandleData: fromdate can not be greater than todate")
+		return HistoryResponse{}, fmt.Errorf("history.GetCandleData: fromdate can not be greater than todate")
 	}
 
 	if !params.IsValidInterval() {
-		return nil, fmt.Errorf("history.GetCandleData: interval days can not be %d when interval is %s. Please see %s for details", params.IntervalDays(), params.Interval, URLHistoryDocumentation)
+		return HistoryResponse{}, fmt.Errorf("history.GetCandleData: interval days can not be %d when interval is %s. Please see %s for details", params.IntervalDays(), params.Interval, URLHistoryDocumentation)
 	}
 
-	err := c.doEnvelope(http.MethodPost, URIGetCandleData, params.GetParams(), nil, &history, true)
-	return history, err
+	err := c.doEnvelope(http.MethodPost, URIGetCandleData, params.GetParams(), nil, &candleData, true)
+
+	return candleData.Parse(), err
 }
