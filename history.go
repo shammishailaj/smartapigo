@@ -107,7 +107,7 @@ func (h HistoryResponse) String() string {
 func (h HistoryResponse) Parse() []HistoryDatum {
 	data := make([]HistoryDatum, len(h))
 	for k, datum := range h {
-		ts, tsErr := time.Parse(TimeFormatLayout, datum[0].(string))
+		ts, tsErr := time.Parse(time.RFC3339, datum[0].(string))
 		if tsErr != nil {
 			ts = time.Now()
 		}
