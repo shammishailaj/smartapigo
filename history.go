@@ -91,7 +91,7 @@ type HistoryDatum struct {
 	High      float64
 	Low       float64
 	Close     float64
-	Volume    int64
+	Volume    float64
 }
 
 type HistoryResponse [][]interface{}
@@ -116,7 +116,7 @@ func (h HistoryResponse) Parse() []HistoryDatum {
 		data[k].High = datum[2].(float64)
 		data[k].Low = datum[3].(float64)
 		data[k].Close = datum[4].(float64)
-		data[k].Volume = datum[5].(int64)
+		data[k].Volume = datum[5].(float64)
 	}
 	return data
 }
