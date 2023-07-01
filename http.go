@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -113,7 +112,7 @@ func (h *httpClient) Do(method, rURL string, params map[string]interface{}, head
 
 	defer r.Body.Close()
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.hLog.Printf("Unable to read response: %v", err)
 		return resp, err
@@ -139,7 +138,7 @@ func (h *httpClient) DoEnvelope(method, url string, params map[string]interface{
 	if resp.Response.StatusCode >= http.StatusBadRequest {
 		var e envelope
 		if err := json.Unmarshal(resp.Body, &e); err != nil {
-			h.hLog.Printf("Error parsing JSON response: %s\nResponse Body:\n%s\n", err.Error(), resp.Body)
+			h.hLog.Printf("Error parsing JSON response: %s| %s\n", resp.Body, err.Error())
 			return err
 		}
 
@@ -150,8 +149,9 @@ func (h *httpClient) DoEnvelope(method, url string, params map[string]interface{
 	envl := envelope{}
 	envl.Data = obj
 
-	if err := json.Unmarshal(resp.Body, &envl); err != nil {
-		h.hLog.Printf("Error parsing JSON response: %v | %s", err, resp.Body)
+	jsonUnmarshalErr := json.Unmarshal(resp.Body, &envl)
+	if jsonUnmarshalErr != nil {
+		h.hLog.Printf("Error parsing JSON response: %s | %s\n", resp.Body, jsonUnmarshalErr.Error())
 		return err
 	}
 
